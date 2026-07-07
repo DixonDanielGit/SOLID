@@ -2,7 +2,7 @@
     "name": "b4stias/solid",
     "autoload": {
         "psr-4": {
-            "B4stias\\Solid\\": "src/"
+            "App\\": "src/"
         }
     },
     "authors": [
