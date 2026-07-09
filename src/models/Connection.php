@@ -1,6 +1,6 @@
 <?php 
 
-namespace App\config;
+namespace App\models;
 
 use PDO;
 use PDOException;
@@ -22,7 +22,6 @@ class Connection
 	public function getPDO(){
 		return $this->pdo;
 	}
-
 }
 
  ?>

@@ -1,17 +1,9 @@
 <?php 
 
+use App\models\Paciente;
 
-use App\config\Connection;
-use App\models\services\PacienteService;
-use App\models\repositories\PacienteRepository;
+$paciente = new Paciente();
 
-$connection = new Connection();
-$pacienteRepositori = new PacienteRepository($connection);
-$pacienteService = new PacienteService($pacienteRepositori);
-
-$page = 1;
-$filters =[];
-
-print_r($pacienteService->listPacientes($filters, $page));
-
+print_r($paciente->read_pacientes());
+print_r($paciente->read_pacientes_con_patologias());
 ?>
