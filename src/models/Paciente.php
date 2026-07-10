@@ -20,9 +20,8 @@ class Paciente extends ModelBase
 	private $estado_salud;
 
 
-	public function toData(){
+	private function toData(){
 		return [
-			'id_paciente'=>$this->getIdPaciente(),
 			'nacionalidad'=>$this->getNacionalidad(),
 			'cedula'=>$this->getCedula(),
 			'nombre'=>$this->getNombre(),
@@ -35,22 +34,16 @@ class Paciente extends ModelBase
 		];
 	}
 
-	public function filterData(array $data){
-		$dataFilter=[];
-		foreach ($data as $key => $value) {
-			if (!$value) {
-				continue;
-			}
-			$dataFilter[$key] = $value; 
-		}
-		return $dataFilter;
+	private function data_id(){
+		return [
+			'id_paciente'=>$this->getIdPaciente()
+		];
 	}
 
 
 	public function read_pacientes()
 	{
-		echo '<h1>Paginacion normal</h1><br><br>';
-		print_r($this->pagination('paciente',$this->toData(), 'id_paciente','estado ="ACT"','3055414'));
+		$this->pagination('paciente',$this->toData(), 'id_paciente','estado ="ACT"','3055414');
 	}
 
 	public function read_pacientes_con_patologias()
@@ -86,9 +79,31 @@ class Paciente extends ModelBase
 				]
 			],
 		];
-		echo '<h1>Paginacion compleja con join</h1><br><br>';
-		print_r($this->pagination_join($list,$this->toData(), 'id_paciente','estado ="ACT"','3055414'));
+		$this->pagination_join($list,$this->toData(), 'id_paciente','estado ="ACT"','3055414');
 	}
+
+	public function search_paciente()
+	{
+		$codition =[
+			'estado'=> 'ACT'
+		];
+		return $this->search('paciente',false,$this->toData(),$codition);
+	}
+
+
+	public function create_paciente(){
+		return $this->add('paciente', $this->toData());
+	}
+
+	public function update_paciente(){
+		return $this->update('paciente', $this->toData(),$this->data_id());
+	}
+
+	public function delete_paciente()
+	{
+		return $this->delete('paciente',$this->data_id());
+	}
+
 
 	// ── Getters & Setters ────────────────────────────────────────────────────
 
@@ -221,10 +236,7 @@ class Paciente extends ModelBase
 		$this->genero = $genero;
 	}
 
-	public function setEstado($estado){
-		if ($estado != 'ACT' || $estado != 'DES') {
-			throw new \InvalidArgumentException("El estado no es valido");
-		}
+	public function setEstado($estado = 'ACT'){
 		$this->estado = $estado;
 	}
 
