@@ -19,8 +19,12 @@ class Paciente extends ModelBase
 	private $estado;
 	private $estado_salud;
 
+	function __construct(){
+		parent::__construct('paciente',$this->get_all(),'estado ="ACT"');
+	}
 
-	private function toData(){
+
+	public function get_all(){
 		return [
 			'nacionalidad'=>$this->getNacionalidad(),
 			'cedula'=>$this->getCedula(),
@@ -34,74 +38,23 @@ class Paciente extends ModelBase
 		];
 	}
 
-	private function data_id(){
+	public function get_id(){
 		return [
 			'id_paciente'=>$this->getIdPaciente()
 		];
 	}
 
-
-	public function read_pacientes()
-	{
-		$this->pagination('paciente',$this->toData(), 'id_paciente','estado ="ACT"','3055414');
-	}
-
-	public function read_pacientes_con_patologias()
-	{
-		$list =[
-			[
-				'table'=>'paciente',
-				'data'=>[
-					'alias'=>'p',
-					'id'=> 'id_paciente',
-					'colums'=>$this->toData(),
-					'conector'=>''
-				]
-			],
-
-			[
-				'table'=>'patologiadepaciente',
-				'data'=>[
-					'alias'=>'pp',
-					'id'=>'id_patologiaDePaciente',
-					'colums'=>['id_paciente'=>3],
-					'conector'=>'p.id_paciente = pp.id_paciente'
-				]
-			],
-
-			[
-				'table'=>'patologia',
-				'data'=>[
-					'alias'=>'pa',
-					'id'=>'id_patologia',
-					'colums'=>['id_patologia'=>2],
-					'conector'=>'pp.id_patologia = pa.id_patologia'
-				]
-			],
-		];
-		$this->pagination_join($list,$this->toData(), 'id_paciente','estado ="ACT"','3055414');
-	}
-
-	public function search_paciente()
-	{
-		$codition =[
-			'estado'=> 'ACT'
-		];
-		return $this->search('paciente',false,$this->toData(),$codition);
-	}
-
-
 	public function create_paciente(){
-		return $this->add('paciente', $this->toData());
+		return $this->add('paciente', $this->get_all());
 	}
 
 	public function update_paciente(){
-		return $this->update('paciente', $this->toData(),$this->data_id());
+		return $this->update('paciente', $this->get_all(),$this->get_id());
 	}
 
 	public function delete_paciente()
 	{
-		return $this->delete('paciente',$this->data_id());
+		return $this->delete('paciente',$this->get_id());
 	}
 
 

@@ -8,14 +8,26 @@ use App\models\Connection;
 
 class ModelBase extends Connection
 {
+	protected $table;
+	protected $colums =[];
+	protected $condicionAditional ='';
 
-	function __construct()
+	private $ordenColumn ='id';
+	private $search ='';
+	private $start =0;
+	private $limit=10;
+	private $ordenDir ='DESC';
+
+	function __construct($table, $colums, $condicionAditional)
 	{
 		parent::__construct();
+		$this->table = $table;
+		$this->colums = $colums;
+		$this->condicionAditional = $condicionAditional;
 	}
 
 
-	private function return_plach_and_colums($data)
+	private function return_data($data)
 	{
 		$paramts = [];
 		foreach ($data as $key => $value) {
@@ -26,22 +38,22 @@ class ModelBase extends Connection
 		return[$columsSQL, $placeholder, $paramts];
 	}
 
-	protected function pagination(string $table ='', array $colums =[],string $ordenColumn ='id',string $condicionAditional='', string $buscar='',int $inicio =0, int $limite=10, string $ordenDir = 'DESC'){
+	public function pagination(){
 
 		$paramts = [];
-		$columsSQL = implode(', ', array_keys($colums));
-		$sql="SELECT $columsSQL FROM $table ";
-		$sql .= ($buscar!=''|| $condicionAditional !='') ? " WHERE " : ' ';
+		$columsSQL = implode(', ', array_keys($this->colums));
+		$sql="SELECT $columsSQL FROM $this->table ";
+		$sql .= ($this->search !=''|| $this->condicionAditional !='') ? " WHERE " : ' ';
 		$conector = '';
 
-		if ($condicionAditional != '') {
-			$sql .= $condicionAditional;
+		if ($this->condicionAditional != '') {
+			$sql .= $this->condicionAditional;
 			$conector = " AND ";
 		}
 
-		if ($buscar!='') {
+		if ($this->search !='') {
 			$sql .=$conector;
-			foreach ($colums as $key => $value) {
+			foreach ($this->colums as $key => $value) {
 				$sql .= "$key LIKE :buscar OR ";
 			}
 			//eliminar el ultimo OR
@@ -49,11 +61,11 @@ class ModelBase extends Connection
 			if($ultimo_or){
 				$sql = substr($sql, 0, $ultimo_or);
 			}
-			$paramts['buscar'] = "%$buscar%";
+			$paramts['buscar'] = "%$this->search%";
 		}
-		$sql .="ORDER BY {$ordenColumn} {$ordenDir} LIMIT :inicio, :limite";
-		$paramts['inicio'] = (int)$inicio;
-		$paramts['limite'] = (int)$limite;
+		$sql .="ORDER BY {$this->ordenColumn} {$this->ordenDir} LIMIT :inicio, :limite";
+		$paramts['inicio'] = (int)$this->start;
+		$paramts['limite'] = (int)$this->limit;
 		$query = $this->getPDO()->prepare($sql);
 		foreach($paramts as $key => $value){
             $type = is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
@@ -62,56 +74,11 @@ class ModelBase extends Connection
 		return ($query->execute()) ? $query->fetchAll():[];
 	}
 
-	protected function pagination_join(array $tables =[], array $colums =[],string $ordenColumn ='id',string $condicionAditional='', string $buscar='',int $inicio =0, int $limite=10, string $ordenDir = 'DESC'){
+	public function add($table,$colums){
+		$columsSQL = $this->return_data($colums)[0];
+		$placeholder = $this->return_data($colums)[1];
+		$paramts = $this->return_data($colums)[2];
 
-		$columsSQL = [];
-		foreach ($tables as $table) {
-			$alias = $table['data']['alias'];
-
-			foreach ($table['data']['colums'] as $key =>$value) {
-				$columsSQL []= $alias.".".$key;
-			}
-		}
-		$columsSQL = implode(', ',$columsSQL);
-		$sql = "SELECT $columsSQL FROM";
-		
-		foreach ($tables as $key => $value) {
-			$sql .= ($key != 0) ? " INNER JOIN " : " ";
-			$sql .= $value['table'].' '.$value['data']['alias'];
-			$sql .= ($key != 0) ? ' ON '.$value['data']['conector']: ' ';
-		}
-
-		$query = $this->getPDO()->prepare($sql);
-		return ($query->execute()) ? $query->fetchAll():[];
-	}
-
-	protected function search($table, $all = true, $colums =[], $codition =[]){
-		$columsSQL = (empty($colums)) ? '*' : implode(', ',array_keys($colums)) ;
-		$sql = "SELECT $columsSQL FROM $table ";
-
-		if (!empty($codition)) {
-			$sql .= " WHERE ";
-			foreach ($codition as $key => $value) {
-				$sql .= " $key =:$key AND ";
-			}
-			$ultimo_and = strrpos($sql,'AND');
-			if($ultimo_and){
-				$sql = substr($sql, 0, $ultimo_and);
-			}
-		}
-
-		$query = $this->getPDO()->prepare($sql);
-		foreach ($codition as $key => $value) {
-		 	$query->bindValue(":$key","$value");
-		}
-		if ($query->execute()) {
-			return ($all) ? $query->fetchAll() : $query->fetch();
-		}
-		return [];
-	}
-
-	protected function add($table,$colums){
-		[$columsSQL, $placeholder, $paramts] = $this->return_plach_and_colums($colums);
 		$sql = "INSERT INTO $table  ($columsSQL) VALUES ($placeholder)";
 		$query = $this->getPDO()->prepare($sql);
 		foreach($paramts as $key => $value){
@@ -121,8 +88,11 @@ class ModelBase extends Connection
 		return $this->getPDO()->lastInsertId();
 	}
 
-	protected function update($table,$colums,$data_id){
-		[$columsSQL, $placeholder, $paramts] = $this->return_plach_and_colums($colums);
+	public function update($table,$colums,$data_id){
+		$columsSQL = $this->return_data($colums)[0];
+		$placeholder = $this->return_data($colums)[1];
+		$paramts = $this->return_data($colums)[2];
+
 
 		$sql = "UPDATE $table SET ";
 		foreach ($colums as $key => $value) {
@@ -146,7 +116,7 @@ class ModelBase extends Connection
 	}
 
 
-	protected function delete($table, $data_id){
+	public function delete($table, $data_id){
 		$id = implode('',array_keys($data_id));
 		$id_value = implode('',array_values($data_id));
 		$sql = "DELETE FROM $table WHERE $id =:$id";
@@ -155,6 +125,58 @@ class ModelBase extends Connection
 			$query->bindValue($key,$value);
 		}
 		$query->execute();
+	}
+
+
+	public function get_orden_column()
+	{
+		return $this->ordenColumn;
+	}
+
+	public function get_search()
+	{
+		return $this->search;
+	}
+
+	public function get_start()
+	{
+		return $this->start;
+	}
+
+	public function get_limit()
+	{
+		return $this->limit;
+	}
+
+	public function get_orden_dir()
+	{
+		return $this->ordenDir;
+	}
+
+	public function set_orden_column($ordenColumn)
+	{
+		$this->ordenColumn = $ordenColumn;
+	}
+
+
+	public function set_search($search)
+	{
+		$this->search = $search;
+	}
+
+	public function set_start($start)
+	{
+		$this->start = $start;
+	}
+
+	public function set_limit($limit)
+	{
+		$this->limit = $limit;
+	}
+
+	public function set_orden_dir($ordenDir)
+	{
+		$this->ordenDir = $ordenDir;
 	}
 
 }

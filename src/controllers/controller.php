@@ -14,5 +14,6 @@ $paciente->setFn('2026-07-07');
 $paciente->setGenero('Masculino');
 $paciente->setEstado();
 
-print_r($paciente->search_paciente());
+
+require_once './src/views/view_pacientes.php';
 ?>
