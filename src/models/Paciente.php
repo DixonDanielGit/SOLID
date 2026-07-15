@@ -20,7 +20,7 @@ class Paciente extends ModelBase
 	private $estado_salud;
 
 	function __construct(){
-		parent::__construct('paciente',$this->get_all(),'estado ="ACT"');
+		parent::__construct();
 	}
 
 

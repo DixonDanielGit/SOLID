@@ -8,22 +8,25 @@ use App\models\Connection;
 
 class ModelBase extends Connection
 {
-	protected $table;
-	protected $colums =[];
-	protected $condicionAditional ='';
-
+	private $tables;
+	private $colums =[];
+	private $condicionAditional ='';
+	private $alias ='';
+	private $union ='';
 	private $ordenColumn ='id';
 	private $search ='';
 	private $start =0;
 	private $limit=10;
 	private $ordenDir ='DESC';
 
-	function __construct($table, $colums, $condicionAditional)
+	function __construct()
 	{
 		parent::__construct();
-		$this->table = $table;
-		$this->colums = $colums;
-		$this->condicionAditional = $condicionAditional;
+		$this->tables = [];
+		$this->colums = ["*"];
+		$this->alias = [];
+		$this->union = [];
+		$this->condicionAditional = '';
 	}
 
 
@@ -38,11 +41,28 @@ class ModelBase extends Connection
 		return[$columsSQL, $placeholder, $paramts];
 	}
 
-	public function pagination(){
-
+	public function read($all = true){
 		$paramts = [];
-		$columsSQL = implode(', ', array_keys($this->colums));
-		$sql="SELECT $columsSQL FROM $this->table ";
+		$columsSQL = implode(',', $this->colums);
+		$sql="SELECT $columsSQL FROM ";
+
+		//si el mas de una tabla se le agrega el inner join
+		if (count($this->tables) > 1 ) {
+			foreach ($this->tables as $key => $value) {
+				if (count($this->tables) != count($this->alias)) {
+					echo "El numero de tablas no coincide con el numero de alias";
+					return;
+				}
+				if ($key ==0) {
+					$sql .= " {$value} {$this->alias[$key]}";
+				} else {
+					$sql .= " INNER JOIN {$value} {$this->alias[$key]} ON {$this->union[$key-1]}";
+				}	
+			}
+		}else{
+			$sql .=" {$this->tables[0]} ";
+		}
+
 		$sql .= ($this->search !=''|| $this->condicionAditional !='') ? " WHERE " : ' ';
 		$conector = '';
 
@@ -53,8 +73,12 @@ class ModelBase extends Connection
 
 		if ($this->search !='') {
 			$sql .=$conector;
-			foreach ($this->colums as $key => $value) {
-				$sql .= "$key LIKE :buscar OR ";
+			foreach ($this->colums as $colum) {
+				if(strrpos($colum,'AS')){
+					$alias = explode("AS", $colum);
+					$colum = $alias[0];
+				}
+				$sql .= "$colum LIKE :buscar OR ";
 			}
 			//eliminar el ultimo OR
 			$ultimo_or = strrpos($sql,'OR');
@@ -63,18 +87,25 @@ class ModelBase extends Connection
 			}
 			$paramts['buscar'] = "%$this->search%";
 		}
-		$sql .="ORDER BY {$this->ordenColumn} {$this->ordenDir} LIMIT :inicio, :limite";
-		$paramts['inicio'] = (int)$this->start;
-		$paramts['limite'] = (int)$this->limit;
+		if ($this->limit > 0) {
+			$sql .=" ORDER BY {$this->ordenColumn} {$this->ordenDir} LIMIT :inicio, :limite";
+			$paramts['inicio'] = (int)$this->start;
+			$paramts['limite'] = (int)$this->limit;
+		}
 		$query = $this->getPDO()->prepare($sql);
+
 		foreach($paramts as $key => $value){
             $type = is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
 			$query->bindValue(":$key",$value, $type);
 		}
-		return ($query->execute()) ? $query->fetchAll():[];
+		// return $sql;
+		if ($query->execute()) {
+			return (!empty($all)) ? $query->fetchAll() : $query->fetch();
+		}
+
 	}
 
-	public function add($table,$colums){
+	public function create($table,$colums){
 		$columsSQL = $this->return_data($colums)[0];
 		$placeholder = $this->return_data($colums)[1];
 		$paramts = $this->return_data($colums)[2];
@@ -127,6 +158,16 @@ class ModelBase extends Connection
 		$query->execute();
 	}
 
+	public function get_tables()
+	{
+		return $this->tables;
+	}
+
+	public function get_colums()
+	{
+		return $this->colums;
+	}
+
 
 	public function get_orden_column()
 	{
@@ -153,6 +194,23 @@ class ModelBase extends Connection
 		return $this->ordenDir;
 	}
 
+	public function get_condicion_aditional()
+	{
+		return $this->condicionAditional;
+	}
+
+
+	public function set_tables($tables)
+	{
+		$this->tables = $tables;
+	}
+
+	public function set_colums($colums)
+	{
+		$this->colums = $colums;
+	}
+
+
 	public function set_orden_column($ordenColumn)
 	{
 		$this->ordenColumn = $ordenColumn;
@@ -177,6 +235,11 @@ class ModelBase extends Connection
 	public function set_orden_dir($ordenDir)
 	{
 		$this->ordenDir = $ordenDir;
+	}
+
+	public function set_condicion_aditional($condicionAditional)
+	{
+		$this->condicionAditional =$condicionAditional;
 	}
 
 }
