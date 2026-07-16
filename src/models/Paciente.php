@@ -38,26 +38,6 @@ class Paciente extends ModelBase
 		];
 	}
 
-	public function get_id(){
-		return [
-			'id_paciente'=>$this->getIdPaciente()
-		];
-	}
-
-	public function create_paciente(){
-		return $this->add('paciente', $this->get_all());
-	}
-
-	public function update_paciente(){
-		return $this->update('paciente', $this->get_all(),$this->get_id());
-	}
-
-	public function delete_paciente()
-	{
-		return $this->delete('paciente',$this->get_id());
-	}
-
-
 	// ── Getters & Setters ────────────────────────────────────────────────────
 
 	public function getIdPaciente()
@@ -115,9 +95,6 @@ class Paciente extends ModelBase
 	public function setNacionalidad($nacionalidad)
 	{
 		// ✅ Bug corregido: era (!$nacionalidad == 'V' || ...)
-		if ($nacionalidad !== 'V' && $nacionalidad !== 'E') {
-			throw new \InvalidArgumentException("La nacionalidad debe ser V o E.");
-		}
 		$this->nacionalidad = $nacionalidad;
 	}
 

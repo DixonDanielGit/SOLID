@@ -2,17 +2,7 @@
 
 use App\models\Paciente;
 
-// $paciente = new Paciente();
-// $paciente->setIdPaciente(111);
-// $paciente->setNacionalidad("V");
-// $paciente->setCedula('10181000');
-// $paciente->setNombre("Xxxxx");
-// $paciente->setApellido("Xddddxxxx");
-// $paciente->setTelefono('04121338031');
-// $paciente->setDireccion("Xxxxx sff dgdsg dgd");
-// // $paciente->setFn('2026-07-07');
-// $paciente->setGenero('Masculino');
-// $paciente->setEstado();
+
 
 function test()
 {
@@ -37,8 +27,8 @@ function data(){
 	$ordenColumna = isset($columnasMapeadas[$colIndex]) ? $columnasMapeadas[$colIndex] : 'id_paciente';
 
 	$paciente->set_tables(["paciente"]);
-	$paciente->set_colums(['nacionalidad','cedula','nombre','apellido','telefono','direccion','fn','genero','estado']);
-	$paciente->set_condicion_aditional("estado ='ACT'");
+	$paciente->set_colums(['id_paciente','nacionalidad','cedula','nombre','apellido','telefono','direccion','fn','genero','estado']);
+	$paciente->set_condicion_aditional(" estado ='ACT'  ");
 
 	$paciente->set_orden_column($ordenColumna);
 	$paciente->set_limit($limit);
@@ -50,22 +40,135 @@ function data(){
 	$pacientes = $paciente->read();
 
 	//total de los registros
-	$paciente->set_colums(['COUNT(*) AS total']);
 	$paciente->set_limit(0);
-	$total = $paciente->read();
+	$total = count($paciente->read());
 
 	//total de registrso filtrados
 	$paciente->set_search($search);
-	$total_filtrado = !empty($search) ? $paciente->read() : $total;
+	$total_filtrado = !empty($search) ? count($paciente->read()) : $total;
 
 	$response = [
 		"draw" => $draw,
-		"recordsTotal" => (int)$total[0],
-		"recordsFiltered" => (int)'68',
+		"recordsTotal" => (int)$total,
+		"recordsFiltered" => (int)$total_filtrado,
 		"data" => is_array($pacientes) ? $pacientes : []
 	];
 	echo json_encode($response);
 	exit();
+}
+
+function save(){
+
+	if (empty($_POST)) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'error' => "Error  al realizar la peticion :("]);
+        exit;
+    }
+
+    try {
+		$paciente = new Paciente();
+		$paciente->set_tables('paciente');
+
+		$paciente->setNacionalidad("V");
+		$paciente->setCedula($_POST['cedula']);
+		$paciente->setNombre($_POST['nombre']);
+		$paciente->setApellido($_POST['apellido']);
+		$paciente->setTelefono($_POST['telefono']);
+		$paciente->setDireccion('Esto es una direccion');
+		$paciente->setFn($_POST['fn']);
+		$paciente->setGenero($_POST['genero']);
+		$paciente->setEstado('ACT');
+
+		$paciente->set_colums($paciente->get_all());
+
+		$insercion = $paciente->create();
+
+        if (!empty($insercion)) {
+            echo json_encode(['ok' => true, 'message' => 'La operación se realizó con éxito', 'data'=>$insercion]);
+        } else {
+            http_response_code(409);
+            echo json_encode(['ok' => false, 'error' => $insercion]);
+            exit;
+        }
+
+	} catch (InvalidArgumentException $e) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
+
+function update(){
+
+	if (empty($_POST)) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'error' => "Error  al realizar la peticion :("]);
+        exit;
+    }
+
+    try {
+		$paciente = new Paciente();
+
+		$paciente->setIdPaciente($_POST['id']);
+		$paciente->setNacionalidad("V");
+		$paciente->setCedula($_POST['cedula']);
+		$paciente->setNombre($_POST['nombre']);
+		$paciente->setApellido($_POST['apellido']);
+		$paciente->setTelefono($_POST['telefono']);
+		$paciente->setDireccion('Esto es una direccion pero editarda');
+		$paciente->setFn($_POST['fn']);
+		$paciente->setGenero($_POST['genero']);
+		$paciente->setEstado('ACT');
+
+		$paciente->set_tables('paciente');
+		$paciente->set_colums($paciente->get_all());
+
+		$update = $paciente->update(['id_paciente'=>$paciente->getIdPaciente()]);
+
+        if (!empty($update)) {
+            echo json_encode(['ok' => true, 'message' => 'La operación se realizó con éxito', 'data'=>$update]);
+        } else {
+            http_response_code(409);
+            echo json_encode(['ok' => false, 'error' => $update]);
+            exit;
+        }
+
+	} catch (InvalidArgumentException $e) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
+function delete($parametro){
+
+	if (empty($_GET)) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'error' => "Error  al realizar la peticion :("]);
+        exit;
+    }
+
+    try{
+		$paciente = new Paciente();
+
+		$paciente->setIdPaciente($parametro[0]);
+
+		$paciente->set_tables('paciente');
+		$delete = $paciente->delete(['id_paciente'=>$paciente->getIdPaciente()]);
+
+		if (!empty($delete)) {
+            echo json_encode(['ok' => true, 'message' => 'La operación se realizó con éxito']);
+        } else {
+            http_response_code(409);
+            echo json_encode(['ok' => false, 'error' => $delete]);
+            exit;
+        }
+    } catch (InvalidArgumentException $e) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
 }
 
 ?>

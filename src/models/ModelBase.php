@@ -98,6 +98,7 @@ class ModelBase extends Connection
             $type = is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
 			$query->bindValue(":$key",$value, $type);
 		}
+
 		// return $sql;
 		if ($query->execute()) {
 			return (!empty($all)) ? $query->fetchAll() : $query->fetch();
@@ -105,57 +106,71 @@ class ModelBase extends Connection
 
 	}
 
-	public function create($table,$colums){
-		$columsSQL = $this->return_data($colums)[0];
-		$placeholder = $this->return_data($colums)[1];
-		$paramts = $this->return_data($colums)[2];
+	public function create(){
+		try{
+			$columsSQL = $this->return_data($this->colums)[0];
+			$placeholder = $this->return_data($this->colums)[1];
+			$paramts = $this->return_data($this->colums)[2];
 
-		$sql = "INSERT INTO $table  ($columsSQL) VALUES ($placeholder)";
-		$query = $this->getPDO()->prepare($sql);
-		foreach($paramts as $key => $value){
-			$query->bindValue($key,$value);
-		}
-		$query->execute();
-		return $this->getPDO()->lastInsertId();
+			$sql = "INSERT INTO $this->tables  ($columsSQL) VALUES ($placeholder)";
+			$query = $this->getPDO()->prepare($sql);
+			foreach($paramts as $key => $value){
+				$query->bindValue($key,$value);
+			}
+			// return $sql;
+			$query->execute();
+			return $this->getPDO()->lastInsertId();
+		} catch (\Exception $e) {
+            return $e;
+        }
 	}
 
-	public function update($table,$colums,$data_id){
-		$columsSQL = $this->return_data($colums)[0];
-		$placeholder = $this->return_data($colums)[1];
-		$paramts = $this->return_data($colums)[2];
+	public function update($data_id){
+		try{
+			$columsSQL = $this->return_data($this->colums)[0];
+			$placeholder = $this->return_data($this->colums)[1];
+			$paramts = $this->return_data($this->colums)[2];
 
+			$sql = "UPDATE $this->tables SET ";
+			foreach ($this->colums as $key => $value) {
+				$sql .= "$key =:$key, ";
+			}
+			$ultima_coma = strrpos($sql,',');
+			if($ultima_coma){
+				$sql = substr($sql, 0, $ultima_coma);
+			}
+			$id = implode('',array_keys($data_id));
+			$id_value = implode('',array_values($data_id));
+			$sql .= " WHERE  $id =:$id";
+			$paramts[":$id"] = $id_value;
+			
+			$query = $this->getPDO()->prepare($sql);
+			foreach($paramts as $key => $value){
+				$query->bindValue($key,$value);
+			}
+			$query->execute();
+			return 1;
 
-		$sql = "UPDATE $table SET ";
-		foreach ($colums as $key => $value) {
-			$sql .= "$key =:$key, ";
-		}
-		$ultima_coma = strrpos($sql,',');
-		if($ultima_coma){
-			$sql = substr($sql, 0, $ultima_coma);
-		}
-		$id = implode('',array_keys($data_id));
-		$id_value = implode('',array_values($data_id));
-		$sql .= " WHERE  $id =:$id";
-		$paramts[":$id"] = $id_value;
-		
-		$query = $this->getPDO()->prepare($sql);
-		foreach($paramts as $key => $value){
-			$query->bindValue($key,$value);
-		}
-		$query->execute();
-		return $this->getPDO()->lastInsertId();
+		} catch (\Exception $e) {
+            return $e;
+        }
 	}
 
 
-	public function delete($table, $data_id){
-		$id = implode('',array_keys($data_id));
-		$id_value = implode('',array_values($data_id));
-		$sql = "DELETE FROM $table WHERE $id =:$id";
-		$query = $this->getPDO()->prepare($sql);
-		foreach ($data_id as $key => $value) {
-			$query->bindValue($key,$value);
-		}
-		$query->execute();
+	public function delete($data_id){
+		try{
+			$id = implode('',array_keys($data_id));
+			$id_value = implode('',array_values($data_id));
+			$sql = "DELETE FROM $this->tables WHERE $id =:$id";
+			$query = $this->getPDO()->prepare($sql);
+			foreach ($data_id as $key => $value) {
+				$query->bindValue($key,$value);
+			}
+			$query->execute();
+			return 1;
+		} catch (\Exception $e) {
+            return $e;
+        }
 	}
 
 	public function get_tables()
