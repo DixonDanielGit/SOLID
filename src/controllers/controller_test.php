@@ -16,42 +16,22 @@ function data(){
 	$start = isset($_GET['start']) ? (int)$_GET['start'] : 0;
 	$limit = isset($_GET['length']) ? (int)$_GET['length'] : 10;
 	$search = isset($_GET['search']['value']) ? $_GET['search']['value'] : '';
-
 	$columnasMapeadas = ['id_paciente', 'cedula', 'nombre', 'apellido', 'telefono','genero', 'fn'];
-
-
 	$colIndex = isset($_GET['order'][0]['column']) ? (int)$_GET['order'][0]['column'] : 0;
 
 	$ordenDir = isset($_GET['order'][0]['dir']) && in_array(strtoupper($_GET['order'][0]['dir']), ['ASC', 'DESC']) ? strtoupper($_GET['order'][0]['dir']) : 'DESC';
-
 	$ordenColumna = isset($columnasMapeadas[$colIndex]) ? $columnasMapeadas[$colIndex] : 'id_paciente';
-
 	$paciente->set_tables(["paciente"]);
 	$paciente->set_colums(['id_paciente','nacionalidad','cedula','nombre','apellido','telefono','direccion','fn','genero','estado']);
 	$paciente->set_condicion_aditional(" estado ='ACT'  ");
 
-	$paciente->set_orden_column($ordenColumna);
-	$paciente->set_limit($limit);
-	$paciente->set_start($start);
-	$paciente->set_search($search);
-	$paciente->set_orden_dir($ordenDir);
-
-	//registros como tal
-	$pacientes = $paciente->read();
-
-	//total de los registros
-	$paciente->set_limit(0);
-	$total = count($paciente->read());
-
-	//total de registrso filtrados
-	$paciente->set_search($search);
-	$total_filtrado = !empty($search) ? count($paciente->read()) : $total;
-
+	$data = $paciente->pagination($start, $limit, $search, $ordenColumna, $ordenDir);
+	
 	$response = [
 		"draw" => $draw,
-		"recordsTotal" => (int)$total,
-		"recordsFiltered" => (int)$total_filtrado,
-		"data" => is_array($pacientes) ? $pacientes : []
+		"recordsTotal" => (int)$data['total'],
+		"recordsFiltered" => (int)$data['total_filtrado'],
+		"data" => $data['data']
 	];
 	echo json_encode($response);
 	exit();
@@ -67,7 +47,7 @@ function save(){
 
     try {
 		$paciente = new Paciente();
-		$paciente->set_tables('paciente');
+		$paciente->set_tables(['paciente']);
 
 		$paciente->setNacionalidad("V");
 		$paciente->setCedula($_POST['cedula']);
@@ -121,7 +101,7 @@ function update(){
 		$paciente->setGenero($_POST['genero']);
 		$paciente->setEstado('ACT');
 
-		$paciente->set_tables('paciente');
+		$paciente->set_tables(['paciente']);
 		$paciente->set_colums($paciente->get_all());
 
 		$update = $paciente->update(['id_paciente'=>$paciente->getIdPaciente()]);
@@ -154,11 +134,12 @@ function delete($parametro){
 
 		$paciente->setIdPaciente($parametro[0]);
 
-		$paciente->set_tables('paciente');
+		$paciente->set_tables(['paciente']);
+
 		$delete = $paciente->delete(['id_paciente'=>$paciente->getIdPaciente()]);
 
 		if (!empty($delete)) {
-            echo json_encode(['ok' => true, 'message' => 'La operación se realizó con éxito']);
+            echo json_encode(['ok' => true, 'message' => 'La operación se realizó con éxito', 'data'=>$delete]);
         } else {
             http_response_code(409);
             echo json_encode(['ok' => false, 'error' => $delete]);

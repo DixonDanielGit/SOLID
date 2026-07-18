@@ -23,7 +23,7 @@ class ModelBase extends Connection
 	{
 		parent::__construct();
 		$this->tables = [];
-		$this->colums = ["*"];
+		$this->colums = [" * "];
 		$this->alias = [];
 		$this->union = [];
 		$this->condicionAditional = '';
@@ -41,9 +41,9 @@ class ModelBase extends Connection
 		return[$columsSQL, $placeholder, $paramts];
 	}
 
-	public function read($all = true){
+	public function read($all = true, $count = false){
 		$paramts = [];
-		$columsSQL = implode(',', $this->colums);
+		$columsSQL = (!$count) ? implode(',', $this->colums): 'COUNT(*) AS total';
 		$sql="SELECT $columsSQL FROM ";
 
 		//si el mas de una tabla se le agrega el inner join
@@ -92,18 +92,42 @@ class ModelBase extends Connection
 			$paramts['inicio'] = (int)$this->start;
 			$paramts['limite'] = (int)$this->limit;
 		}
+
 		$query = $this->getPDO()->prepare($sql);
 
 		foreach($paramts as $key => $value){
             $type = is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
 			$query->bindValue(":$key",$value, $type);
 		}
-
-		// return $sql;
 		if ($query->execute()) {
 			return (!empty($all)) ? $query->fetchAll() : $query->fetch();
 		}
 
+	}
+
+	public function pagination($start, $limit, $search, $ordenColumn, $ordenDir){
+		$this->set_orden_column($ordenColumn);
+		$this->set_limit($limit);
+		$this->set_start($start);
+		$this->set_search($search);
+		$this->set_orden_dir($ordenDir);
+
+		//registros como tal
+		$data = $this->read();
+
+		//total de los registros
+		$this->set_limit(0);
+		$total = $this->read(false, true)['total'];
+
+		//total de registrso filtrados
+		$this->set_search($search);
+		$total_filtrado = !empty($search) ? $this->read(false, true)['total'] : $total;
+
+		return [
+			'data'=>$data,
+			'total'=>$total,
+			'total_filtrado'=>$total_filtrado
+		];
 	}
 
 	public function create(){
@@ -112,7 +136,7 @@ class ModelBase extends Connection
 			$placeholder = $this->return_data($this->colums)[1];
 			$paramts = $this->return_data($this->colums)[2];
 
-			$sql = "INSERT INTO $this->tables  ($columsSQL) VALUES ($placeholder)";
+			$sql = "INSERT INTO {$this->tables[0]}  ($columsSQL) VALUES ($placeholder)";
 			$query = $this->getPDO()->prepare($sql);
 			foreach($paramts as $key => $value){
 				$query->bindValue($key,$value);
@@ -131,7 +155,7 @@ class ModelBase extends Connection
 			$placeholder = $this->return_data($this->colums)[1];
 			$paramts = $this->return_data($this->colums)[2];
 
-			$sql = "UPDATE $this->tables SET ";
+			$sql = "UPDATE {$this->tables[0]} SET ";
 			foreach ($this->colums as $key => $value) {
 				$sql .= "$key =:$key, ";
 			}
@@ -161,7 +185,7 @@ class ModelBase extends Connection
 		try{
 			$id = implode('',array_keys($data_id));
 			$id_value = implode('',array_values($data_id));
-			$sql = "DELETE FROM $this->tables WHERE $id =:$id";
+			$sql = "DELETE FROM {$this->tables[0]} WHERE $id =:$id";
 			$query = $this->getPDO()->prepare($sql);
 			foreach ($data_id as $key => $value) {
 				$query->bindValue($key,$value);
@@ -258,5 +282,3 @@ class ModelBase extends Connection
 	}
 
 }
-
- ?>
