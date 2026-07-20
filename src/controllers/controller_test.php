@@ -58,10 +58,9 @@ function save(){
 		$paciente->setFn($_POST['fn']);
 		$paciente->setGenero($_POST['genero']);
 		$paciente->setEstado('ACT');
-
 		$paciente->set_colums($paciente->get_all());
 
-		$insercion = $paciente->create();
+		$insercion = $paciente->create_paciente();
 
         if (!empty($insercion)) {
             echo json_encode(['ok' => true, 'message' => 'La operación se realizó con éxito', 'data'=>$insercion]);
@@ -104,7 +103,7 @@ function update(){
 		$paciente->set_tables(['paciente']);
 		$paciente->set_colums($paciente->get_all());
 
-		$update = $paciente->update(['id_paciente'=>$paciente->getIdPaciente()]);
+		$update = $paciente->update_paciente();
 
         if (!empty($update)) {
             echo json_encode(['ok' => true, 'message' => 'La operación se realizó con éxito', 'data'=>$update]);
@@ -133,10 +132,8 @@ function delete($parametro){
 		$paciente = new Paciente();
 
 		$paciente->setIdPaciente($parametro[0]);
-
 		$paciente->set_tables(['paciente']);
-
-		$delete = $paciente->delete(['id_paciente'=>$paciente->getIdPaciente()]);
+		$delete = $paciente->delete_paciente();
 
 		if (!empty($delete)) {
             echo json_encode(['ok' => true, 'message' => 'La operación se realizó con éxito', 'data'=>$delete]);

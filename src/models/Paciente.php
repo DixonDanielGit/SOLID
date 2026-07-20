@@ -3,6 +3,7 @@
 namespace App\models;
 
 use App\models\ModelBase;
+use App\models\Validator;
 
 class Paciente extends ModelBase
 {
@@ -19,10 +20,13 @@ class Paciente extends ModelBase
 	private $estado;
 	private $estado_salud;
 
+	private $validator;
+
 	function __construct(){
 		parent::__construct();
+		//clase para validar la session
+		$this->validator = new Validator();
 	}
-
 
 	public function get_all(){
 		return [
@@ -36,6 +40,28 @@ class Paciente extends ModelBase
 			'genero'=>$this->getGenero(),
 			'estado'=>$this->getEstado(),
 		];
+	}
+
+	public function create_paciente($idUsuario = null)
+	{
+		$this->validator->set_campos(array_values($this->get_all()));
+		$this->validator->validarCamposObligatorios();
+		return $this->create();
+	}
+
+	public function update_paciente($idUsuario = null)
+	{
+		$this->validator->set_campos(array_values($this->get_all()));
+		$this->validator->validarCamposObligatorios();
+		return $this->update(['id_paciente'=>$this->getIdPaciente()]);
+	}
+
+	public function delete_paciente($idUsuario = null)
+	{
+		$data_id = ['id_paciente'=>$this->getIdPaciente()];
+		$this->validator->set_campos(array_values($data_id));
+		$this->validator->validarCamposObligatorios();
+		return $this->delete($data_id);
 	}
 
 	// ── Getters & Setters ────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ use PDO;
 use PDOException;
 use App\models\Connection;
 
-class ModelBase extends Connection
+abstract class ModelBase extends Connection
 {
 	private $tables;
 	private $colums =[];
@@ -28,7 +28,6 @@ class ModelBase extends Connection
 		$this->union = [];
 		$this->condicionAditional = '';
 	}
-
 
 	private function return_data($data)
 	{
@@ -63,15 +62,15 @@ class ModelBase extends Connection
 			$sql .=" {$this->tables[0]} ";
 		}
 
-		$sql .= ($this->search !=''|| $this->condicionAditional !='') ? " WHERE " : ' ';
+		$sql .= (!empty($this->search)|| !empty($this->condicionAditional)) ? " WHERE " : ' ';
 		$conector = '';
 
-		if ($this->condicionAditional != '') {
+		if (!empty($this->condicionAditional)) {
 			$sql .= $this->condicionAditional;
 			$conector = " AND ";
 		}
 
-		if ($this->search !='') {
+		if (!empty($this->search)) {
 			$sql .=$conector;
 			foreach ($this->colums as $colum) {
 				if(strrpos($colum,'AS')){
@@ -130,7 +129,7 @@ class ModelBase extends Connection
 		];
 	}
 
-	public function create(){
+	protected function create(){
 		try{
 			$columsSQL = $this->return_data($this->colums)[0];
 			$placeholder = $this->return_data($this->colums)[1];
@@ -149,7 +148,7 @@ class ModelBase extends Connection
         }
 	}
 
-	public function update($data_id){
+	protected function update($data_id){
 		try{
 			$columsSQL = $this->return_data($this->colums)[0];
 			$placeholder = $this->return_data($this->colums)[1];
@@ -181,7 +180,7 @@ class ModelBase extends Connection
 	}
 
 
-	public function delete($data_id){
+	protected function delete($data_id){
 		try{
 			$id = implode('',array_keys($data_id));
 			$id_value = implode('',array_values($data_id));
